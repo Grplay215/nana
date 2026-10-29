@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f797af">
+    <title>Tenho um convite especial para você! 💕</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        romantic: {
+                            50: '#fff0f3',
+                            100: '#ffe3e8',
+                            200: '#fcc2d0',
+                            300: '#f797af',
+                            400: '#f06595',
+                            500: '#e64980',
+                            600: '#d6336c',
+                            700: '#c2255c',
+                        }
+                    },
+                    fontFamily: {
+                        cursive: ['"Dancing Script"', 'cursive'],
+                        sans: ['"Nunito"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #ffe3e8 0%, #fcc2d0 50%, #f797af 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        /* Envelope (proporcional, se adapta a qualquer tela) */
+        .envelope-wrapper { perspective: 1000px; }
+        .envelope {
+            width: min(320px, 82vw);
+            aspect-ratio: 3 / 2;
+            background: #f06595;
+            position: relative;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 15px 35px rgba(214, 51, 108, 0.3);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        @media (hover: hover) { .envelope:hover { transform: translateY(-5px); } }
+        .envelope::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #f797af;
+            clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
+            border-radius: 0 0 15px 15px;
+            z-index: 3;
+        }
+        .envelope-flap {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 55%;
+            background: #d6336c;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top;
+            transition: transform 0.6s ease, z-index 0.2s ease;
+            z-index: 4;
+        }
+        .envelope.open .envelope-flap { transform: rotateX(180deg); z-index: 1; }
+        .letter-preview {
+            position: absolute;
+            bottom: 10px; left: 50%;
+            transform: translateX(-50%);
+            width: 88%; height: 80%;
+            background: white;
+            border-radius: 10px;
+            padding: 10px;
+            transition: transform 0.6s ease;
+            z-index: 2;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .envelope.open .letter-preview { transform: translate(-50%, -45%); }
+
+        /* Floating Hearts Canvas */
+        #hearts-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Custom Pulse Animation */
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.15); }
+            70% { transform: scale(1); }
+        }
+
+        .pulse-heart {
+            animation: heartbeat 1.5s infinite;
+        }
+
+        /* Shimmer effect for YES button */
+        .btn-shimmer {
+            background-size: 200% auto;
+            background-image: linear-gradient(to right, #e64980 0%, #ff87ab 50%, #e64980 100%);
+            transition: 0.5s;
+        }
+        .btn-shimmer:hover {
+            background-position: right center;
+        }
+
+        /* Option Card Selections */
+        .option-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .option-card.selected {
+            border-color: #e64980;
+            background-color: #fff0f3;
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 20px -5px rgba(230, 73, 128, 0.3);
+        }
+
+        /* Glassmorphism containers */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        /* Troca de etapas */
+        @keyframes stageIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .stage-transition { animation: stageIn 0.4s ease; }
+        .stage-hidden { display: none; }
+
+        /* Mobile: evita zoom do iOS, permite digitar, hover só em mouse */
+        input, select {
+            font-size: 16px !important;
+            -webkit-user-select: text;
+            user-select: text;
+            min-width: 0;
+            max-width: 100%;
+            min-height: 3rem;
+        }
+        @media (hover: none) { .option-card:hover { transform: none; } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 relative">
+
+    <!-- Canvas para corações flutuantes no fundo -->
+    <canvas id="hearts-canvas"></canvas>
+
+    <!-- MAIN CONTAINER -->
+    <main class="w-full max-w-xl mx-auto relative z-10 my-auto">
+
+        <!-- ================= STAGE 1: INTRO ENVELOPE ================= -->
+        <section id="stage-1" class="stage-transition flex flex-col items-center justify-center text-center py-8">
+            <div class="mb-8">
+                <span class="inline-block px-4 py-1.5 bg-white/80 backdrop-blur-md rounded-full text-romantic-600 font-bold text-sm shadow-sm border border-pink-100 mb-3">
+                    <i class="fa-solid fa-envelope-open-text mr-1">
+</i> Você recebeu uma mensagem especial!
+                </span>
+                <h1 class="text-4xl sm:text-5xl font-bold text-gray-800 font-cursive tracking-wide">
+                    Abra o envelope...
+                </h1>
+            </div>
+
+            <!-- Envelope Interativo -->
+            <div class="envelope-wrapper my-6" onclick="openEnvelope()">
+                <div id="envelope-element" class="envelope flex items-center justify-center">
+                    <div class="envelope-flap"></div>
+                    <div class="letter-preview flex flex-col items-center justify-center text-center">
+                        <i class="fa-solid fa-heart text-3xl text-romantic-500 mb-1 pulse-heart"></i>
+                        <p class="font-cursive text-xl text-gray-700 font-bold">Para alguém especial ✨</p>
+                        <p class="text-xs text-gray-400 mt-1">Toque para ler</p>
+                    </div>
+                    <div class="z-10 text-white font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-heart text-pink-200"></i>
+                        <span>Clique Aqui</span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600 mt-4 animate-pulse">
+                👇 Clique no envelope para abrir
+            </p>
+        </section>
+
+        <!-- ================= STAGE 2: WILL YOU GO OUT WITH ME? ================= -->
+        <section id="stage-2" class="stage-transition stage-hidden">
+            <div class="glass-card rounded-3xl p-6 sm:p-10 text-center shadow-2xl relative overflow-hidden">
+                <!-- Top Decoration -->
+                <div class="w-20 h-20 bg-romantic-100 rounded-full flex items-center justify-center mx-auto mb-6 text-romantic-500 text-3xl shadow-inner pulse-heart">
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-800 font-cursive mb-4 leading-tight">
+                    Você aceita sair comigo para um date inesquecível?
+                </h2>
+                
+                <p class="text-gray-600 mb-8 text-base sm:text-lg">
+                    Prometo boa conversa, risadas, comidas gostosas e momentos incríveis! 🌹
+                </p>
+
+                <!-- Dynamic reaction text for dodge button -->
+                <div id="dodge-reaction" class="min-h-[2.5rem] mb-4 flex items-center justify-center font-bold text-romantic-600 text-sm sm:text-base transition-all duration-200 opacity-0">
+                    <!-- Text inserted via JS -->
+                </div>
+
+                <!-- Action Buttons Container -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 relative min-h-[140px]" id="button-area">
+                    <!-- SIM Button -->
+                    <button id="btn-yes" onclick="acceptDate()" class="btn-shimmer text-white font-extrabold text-xl py-4 px-10 rounded-2xl shadow-lg hover:shadow-pink-300/50 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 w-full sm:w-auto cursor-pointer z-20">
+                        <i class="fa-solid fa-heart text-2xl animate-bounce"></i>
+                        <span>SIM! Eu quero!</span>
+                    </button>
+
+                    <!-- NÃO Button (Dodging) -->
+                    <button id="btn-no" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-lg py-4 px-8 rounded-2xl shadow transition-all duration-150 w-full sm:w-auto cursor-pointer z-10 sm:relative">
+                        Não 😢
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STAGE 3: DATE PLANNING ================= -->
+        <section id="stage-3" class="stage-transition stage-hidden">
+            <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+                
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <span class="inline-block px-4 py-1 bg-pink-100 text-romantic-600 rounded-full font-bold text-xs uppercase tracking-wider mb-2">
+                        🎉 Uhull! Ela disse SIM!
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-gray-800 font-cursive">
+                        Monte o nosso Date Perfeito!
+                    </h2>
+                    <p class="text-gray-600 text-sm sm:text-base mt-1">
+                        Escolha suas opções favoritas para planejarmos tudo:
+                    </p>
+                </div>
+
+                <!-- Form Options -->
+                <div class="space-y-6">
+
+                    <!-- Choice 1: Food -->
+                    <div>
+                        <label class="block text-gray-800 font-bold text-base mb-3 flex items-center gap-2">
+                            <span class="w-7 h-7 bg-romantic-500 text-white rounded-full flex items-center justify-center text-xs">1</span>
+                            O que vamos comer? 🍕
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('food', 'Japonesa 🍣', this)">
+                                <span class="text-2xl block mb-1">🍣</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Japa</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('food', 'Pizza 🍕', this)">
+                                <span class="text-2xl block mb-1">🍕</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Pizza</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('food', 'Hambúrguer 🍔', this)">
+                                <span class="text-2xl block mb-1">🍔</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Hambúrguer</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('food', 'Café & Sobremesa ☕🍰', this)">
+                                <span class="text-2xl block mb-1">☕</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Café & Doces</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60 col-span-2 sm:col-span-1" onclick="selectOption('food', 'Surpresa! 🎁', this)">
+                                <span class="text-2xl block mb-1">🎁</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Me Surpreenda</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Choice 2: Activity -->
+                    <div>
+                        <label class="block text-gray-800 font-bold text-base mb-3 flex items-center gap-2">
+                            <span class="w-7 h-7 bg-romantic-500 text-white rounded-full flex items-center justify-center text-xs">2</span>
+                            O que vamos fazer depois? 🎬
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('activity', 'Cinema & Pipoca 🍿', this)">
+                                <span class="text-2xl block mb-1">🎬</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Cinema</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('activity', 'Passeio ao Ar Livre 🌳', this)">
+                                <span class="text-2xl block mb-1">🌳</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Parque / Passeio</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('activity', 'Drinks & Boa Conversa 🍸', this)">
+                                <span class="text-2xl block mb-1">🍸</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Drinks / Bar</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60" onclick="selectOption('activity', 'Jogos / Arcade 👾', this)">
+                                <span class="text-2xl block mb-1">👾</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Jogos / Arcade</span>
+                            </div>
+                            <div class="option-card glass-card p-3 rounded-2xl text-center cursor-pointer bg-white/60 col-span-2 sm:col-span-1" onclick="selectOption('activity', 'Maratona de Filmes/Séries 🍿', this)">
+                                <span class="text-2xl block mb-1">🛋️</span>
+                                <span class="text-xs sm:text-sm font-semibold text-gray-700">Ver Filmes Em Casa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Choice 3: Day & Time -->
+                    <div>
+                        <label class="block text-gray-800 font-bold text-base mb-3 flex items-center gap-2">
+                            <span class="w-7 h-7 bg-romantic-500 text-white rounded-full flex items-center justify-center text-xs">3</span>
+                            Qual o melhor dia/horário? 📅
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <input type="date" id="date-picker" onchange="updateDateDetails()" class="w-full bg-white/80 border border-pink-200 text-gray-700 font-medium rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-romantic-400">
+                            </div>
+                            <div>
+                                <select id="time-picker" onchange="updateDateDetails()" class="w-full bg-white/80 border border-pink-200 text-gray-700 font-medium rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-romantic-400">
+                                    <option value="">Escolha o horário...</option>
+                                    <option value="Final da tarde (17:00)">Final da tarde (17:00)</option>
+                                    <option value="De noite (19:30)">De noite (19:30)</option>
+                                    <option value="Mais tarde (21:00)">Mais tarde (21:00)</option>
+                                    <option value="Qualquer horário para você!">Qualquer horário!</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Advance Button -->
+                <button id="btn-finish" onclick="goToSummary()" class="mt-8 w-full bg-gradient-to-r from-romantic-500 to-romantic-600 hover:from-romantic-600 hover:to-romantic-700 text-white font-bold text-lg py-4 rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer">
+                    <span>Ver Nosso Plano de Date</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- ================= STAGE 4: FINAL SUMMARY & WHATSAPP ================= -->
+        <section id="stage-4" class="stage-transition stage-hidden">
+            <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl text-center">
+                
+                <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 text-romantic-500 text-2xl">
+                    <i class="fa-solid fa-heart-circle-check"></i>
+                </div>
+
+                <h2 class="text-3xl font-bold text-gray-800 font-cursive mb-1">
+                    Nosso Date está Quase Pronto!
+                </h2>
+                <p class="text-gray-600 text-sm mb-6">
+                    Confira os detalhes escolhidos por você:
+                </p>
+
+                <!-- Ticket / Card Summary -->
+                <div class="bg-white/90 border-2 border-dashed border-pink-300 rounded-2xl p-5 text-left mb-6 relative shadow-inner">
+                    <div class="absolute -top-3 right-4 bg-romantic-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Voucher do Amor
+                    </div>
+
+                    <div class="space-y-3.5 text-gray-700 text-sm sm:text-base">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-utensils text-romantic-500 mt-1"></i>
+                            <div>
+                                <span class="text-xs text-gray-400 block font-semibold">COMIDA</span>
+                                <span id="summary-food" class="font-bold text-gray-800">Não selecionado</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-ticket text-romantic-500 mt-1"></i>
+                            <div>
+                                <span class="text-xs text-gray-400 block font-semibold">PROGRAMA</span>
+                                <span id="summary-activity" class="font-bold text-gray-800">Não selecionado</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-calendar-day text-romantic-500 mt-1"></i>
+                            <div>
+                                <span class="text-xs text-gray-400 block font-semibold">DATA E HORÁRIO</span>
+                                <span id="summary-datetime" class="font-bold text-gray-800">A combinar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phone number prompt (Optional) -->
+                <div class="mb-6 text-left">
+                    <label class="block text-xs font-bold text-gray-600 mb-1">
+                        📱 Número do WhatsApp do remetente (opcional se enviar direto):
+                    </label>
+                    <input type="tel" id="sender-phone" placeholder="Ex: 5511999999999 (opcional)" class="w-full bg-white/80 border border-pink-200 text-xs sm:text-sm text-gray-700 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-romantic-400">
+                </div>
+
+                <!-- WhatsApp Export Button -->
+                <button onclick="sendToWhatsApp()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-lg py-4 px-6 rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-2xl"></i>
+                    <span>Confirmar no WhatsApp!</span>
+                </button>
+
+                <button onclick="resetApp()" class="mt-4 text-xs text-gray-500 hover:text-romantic-600 underline cursor-pointer">
+                    Refazer escolhas
+                </button>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JAVASCRIPT INTERACTION LOGIC -->
+    <script>
+        // State management
+        const dateChoices = {
+            food: '',
+            activity: '',
+            date: '',
+            time: ''
+        };
+
+        // Escalate messages for dodge button
+        const dodgeMessages = [
+            "Tem certeza disso? 🤔",
+            "Certeza absoluta? 🥺",
+            "Pensa com carinho! ✨",
+            "Olha o 'Sim' tão bonito ali do lado! 👉",
+            "O botão 'Não' está quebrado, tenta o outro! 😜",
+            "Erro 404: Opção 'Não' indisponível! 🚫",
+            "Nem adianta tentar fugir! ❤️",
+            "Você realmente quer perder esse date? 💔",
+            "Acho que você quis dizer SIM! 🌹"
+        ];
+        let dodgeCount = 0;
+
+        // Stage Transitions
+        function goToStage(stageNumber) {
+            for (let i = 1; i <= 4; i++) {
+                const stage = document.getElementById(`stage-${i}`);
+                if (i === stageNumber) {
+                    stage.classList.remove('stage-hidden');
+                } else {
+                    stage.classList.add('stage-hidden');
+                }
+            }
+        }
+
+        // Stage 1: Envelope Opening
+        function openEnvelope() {
+            const env = document.getElementById('envelope-element');
+            env.classList.add('open');
+            
+            setTimeout(() => {
+                goToStage(2);
+                initDodgeButton();
+            }, 800);
+        }
+
+        // Stage 2: Dodging "NO" Button Logic
+        function initDodgeButton() {
+            const noBtn = document.getElementById('btn-no');
+            const yesBtn = document.getElementById('btn-yes');
+            const reactionText = document.getElementById('dodge-reaction');
+
+            function moveButton() {
+                dodgeCount++;
+                
+                // Aumenta o SIM (menos no celular para não estourar a tela)
+                const maxScale = window.innerWidth > 640 ? 1.4 : 1.12;
+                yesBtn.style.transform = `scale(${Math.min(1 + dodgeCount * 0.05, maxScale)})`;
+
+                const msgIndex = Math.min(dodgeCount - 1, dodgeMessages.length - 1);
+                reactionText.textContent = dodgeMessages[msgIndex];
+                reactionText.style.opacity = '1';
+
+                // Posição atual (descontando o deslocamento já aplicado)
+                const m = new DOMMatrix(getComputedStyle(noBtn).transform);
+                const r = noBtn.getBoundingClientRect();
+                const baseL = r.left - m.m41, baseT = r.top - m.m42;
+                const yr = yesBtn.getBoundingClientRect();
+                const pad = 12, w = r.width, h = r.height;
+
+                let tx = 0, ty = 0;
+                for (let i = 0; i < 25; i++) {
+                    const L = pad + Math.random() * Math.max(1, window.innerWidth - w - pad * 2);
+                    const T = pad + Math.random() * Math.max(1, window.innerHeight - h - pad * 2);
+                    const overlapsYes = L < yr.right + 8 && L + w > yr.left - 8 && T < yr.bottom + 8 && T + h > yr.top - 8;
+                    tx = L - baseL; ty = T - baseT;
+                    if (!overlapsYes) break;
+                }
+
+                noBtn.style.position = 'relative';
+                noBtn.style.transform = `translate(${tx}px, ${ty}px)`;
+            }
+
+            // Desktop Hover & Mobile Touch listeners
+            noBtn.addEventListener('mouseover', moveButton);
+            noBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveButton();
+            });
+            noBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                moveButton();
+            });
+        }
+
+        // Stage 2: Acceptance
+        function acceptDate() {
+            // Trigger Confetti
+            triggerConfetti();
+
+            // Move to Date Planning stage
+            setTimeout(() => {
+                goToStage(3);
+                // Set default minimum date to today
+                const datePicker = document.getElementById('date-picker');
+                const today = new Date().toISOString().split('T')[0];
+                datePicker.min = today;
+            }, 400);
+        }
+
+        // Stage 3: Selection Logic
+        function selectOption(category, value, element) {
+            // Deselect siblings in the same grid
+            const siblings = element.parentElement.querySelectorAll('.option-card');
+            siblings.forEach(sib => sib.classList.remove('selected'));
+
+            // Select current
+            element.classList.add('selected');
+            dateChoices[category] = value;
+        }
+
+        function updateDateDetails() {
+            dateChoices.date = document.getElementById('date-picker').value;
+            dateChoices.time = document.getElementById('time-picker').value;
+        }
+
+        // Stage 3 -> Stage 4: Go to Summary
+        function goToSummary() {
+            // Fallback selection if nothing picked
+            if (!dateChoices.food) dateChoices.food = "Sua escolha de surpresa! 🍕/🍣";
+            if (!dateChoices.activity) dateChoices.activity = "O que você preferir! ✨";
+
+            // Format Summary Text
+            document.getElementById('summary-food').textContent = dateChoices.food;
+            document.getElementById('summary-activity').textContent = dateChoices.activity;
+
+            // Format Date String
+            let formattedDate = "A combinar";
+            if (dateChoices.date) {
+                const parts = dateChoices.date.split('-');
+                if (parts.length === 3) {
+                    formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+            if (dateChoices.time) {
+                formattedDate += ` às ${dateChoices.time}`;
+            }
+
+            document.getElementById('summary-datetime').textContent = formattedDate;
+
+            goToStage(4);
+            triggerConfettiSoft();
+        }
+
+        // Stage 4: Send to WhatsApp
+        function sendToWhatsApp() {
+            const phoneInput = document.getElementById('sender-phone').value.replace(/\D/g, '');
+            
+            const food = dateChoices.food || "Surpresa";
+            const activity = dateChoices.activity || "Surpresa";
+            const dateTime = document.getElementById('summary-datetime').textContent;
+
+            // Formatted message
+            const message = `Eu aceito o convite para o nosso date! 🌹✨\n\n` +
+                            `Aqui estão as minhas escolhas:\n` +
+                            `🍕 *Comida:* ${food}\n` +
+                            `🎬 *Programa:* ${activity}\n` +
+                            `📅 *Data/Horário:* ${dateTime}\n\n` +
+                            `Mal posso esperar! ❤️`;
+
+            const encodedMessage = encodeURIComponent(message);
+            
+            let whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            if (phoneInput.length >= 10) {
+                whatsappUrl = `https://wa.me/${phoneInput}?text=${encodedMessage}`;
+            }
+
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function resetApp() {
+            dateChoices.food = '';
+            dateChoices.activity = '';
+            dateChoices.date = '';
+            dateChoices.time = '';
+            
+            document.querySelectorAll('.option-card').forEach(el => el.classList.remove('selected'));
+            document.getElementById('date-picker').value = '';
+            document.getElementById('time-picker').value = '';
+
+            goToStage(3);
+        }
+
+        // ================= CONFETTI ANIMATIONS =================
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                // First burst
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#e64980', '#ff87ab', '#fcc2d0', '#ffffff']
+                });
+
+                // Follow up burst
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 50,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: ['#e64980', '#ff87ab', '#ffd8a8']
+                    });
+                    confetti({
+                        particleCount: 50,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: ['#e64980', '#ff87ab', '#ffd8a8']
+                    });
+                }, 250);
+            }
+        }
+
+        function triggerConfettiSoft() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 40,
+                    spread: 100,
+                    origin: { y: 0.4 },
+                    colors: ['#e64980', '#ffffff']
+                });
+            }
+        }
+
+        // ================= BACKGROUND FLOATING HEARTS =================
+        const canvas = document.getElementById('hearts-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let hearts = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Heart {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + Math.random() * 20;
+                this.size = Math.random() * 15 + 8;
+                this.speedY = Math.random() * 1.5 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = `rgba(230, 73, 128, ${this.opacity})`;
+            }
+
+            update() {
+                this.y -= this.speedY;
+                this.x += this.speedX;
+
+                if (this.y < -20) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                const topCurveHeight = this.size * 0.3;
+                ctx.moveTo(this.x, this.y + topCurveHeight);
+                // top left curve
+                ctx.bezierCurveTo(
+                    this.x, this.y, 
+                    this.x - this.size / 2, this.y, 
+                    this.x - this.size / 2, this.y + topCurveHeight
+                );
+                // bottom left curve
+                ctx.bezierCurveTo(
+                    this.x - this.size / 2, this.y + (this.size + topCurveHeight) / 2, 
+                    this.x, this.y + this.size, 
+                    this.x, this.y + this.size
+                );
+                // bottom right curve
+                ctx.bezierCurveTo(
+                    this.x, this.y + this.size, 
+                    this.x + this.size / 2, this.y + (this.size + topCurveHeight) / 2, 
+                    this.x + this.size / 2, this.y + topCurveHeight
+                );
+                // top right curve
+                ctx.bezierCurveTo(
+                    this.x + this.size / 2, this.y, 
+                    this.x, this.y, 
+                    this.x, this.y + topCurveHeight
+                );
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Initialize particles
+        function initHearts() {
+            hearts = [];
+            const count = Math.floor((canvas.width * canvas.height) / 22000);
+            for (let i = 0; i < Math.min(count, 35); i++) {
+                hearts.push(new Heart());
+            }
+        }
+
+        function animateHearts() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hearts.forEach(heart => {
+                heart.update();
+                heart.draw();
+            });
+            requestAnimationFrame(animateHearts);
+        }
+
+        initHearts();
+        animateHearts();
+    </script>
+</body>
+</html>
